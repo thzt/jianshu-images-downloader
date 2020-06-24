@@ -1,13 +1,11 @@
 const fs = require('fs');
 const path = require('path');
-const runScript = require('runscript');
-const download = require('download');
 
-const parallelRunPromise = require('./util/parallel-run-promise');
+const run = require('runscript');
 
 // 获取所有的markdown文件，相对地址
 const getMarkdownFiles = async sourceDir => {
-  const { stdout } = await runScript('ls **/*.md', {
+  const { stdout } = await run('ls **/*.md', {
     cwd: sourceDir,
     stdio: 'pipe',
   });
@@ -54,33 +52,8 @@ const getImageFileName = imageUrl => {
   return imageFileName;
 };
 
-// 入口函数
-const main = async () => {
-  const [, , sourceDir, targetDir] = process.argv;
-
-  const files = await getMarkdownFiles(sourceDir);
-  const imageUrls = [...imageUrlGen(sourceDir, files)];
-
-  const lazyPromises = imageUrls.map(({ dir, imageUrl }) => async () => {
-    const imageFileName = getImageFileName(imageUrl);
-
-    // 对于不合法的图片地址，不保存
-    if (imageFileName == null) {
-      return;
-    }
-
-    // 确保文件夹存在
-    const distDir = path.join(targetDir, dir);
-    await runScript(`mkdir -p "${distDir}"`);
-
-    // 下载
-    const distFile = path.join(distDir, imageFileName);
-    const buffer = await download(imageUrl);
-    fs.writeFileSync(distFile, buffer);
-  });
-
-  // 限制并发数
-  await parallelRunPromise(lazyPromises, 20);
+module.exports = {
+  getMarkdownFiles,
+  imageUrlGen,
+  getImageFileName,
 };
-
-main();
