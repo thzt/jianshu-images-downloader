@@ -1,15 +1,15 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
-const run = require('runscript');
+const run = require("runscript");
 
 // 获取所有的markdown文件，相对地址
-const getMarkdownFiles = async sourceDir => {
-  const { stdout } = await run('ls **/*.md', {
+const getMarkdownFiles = async (sourceDir) => {
+  const { stdout } = await run("ls **/*.md", {
     cwd: sourceDir,
-    stdio: 'pipe',
+    stdio: "pipe",
   });
-  const files = stdout.toString().split('\n');
+  const files = stdout.toString().split("\n");
   // 去掉尾部空行
   files.pop();
 
@@ -33,22 +33,28 @@ const imageUrlGen = function* (sourceDir, files) {
       const [, imageUrl] = imageUrlMatch;
       yield {
         dir,
-        imageUrl,
+
+        // 转成 https 协议，不然下载不了
+        imageUrl: imageUrl.replace(/^http:\/\//g, "https://"),
       };
     }
   }
 };
 
 // 获取图片的文件名
-const getImageFileName = imageUrl => {
+const getImageFileName = (imageUrl) => {
   let url;
   try {
     url = new URL(imageUrl);
   } catch (err) {
-    console.log('不保存', imageUrl, err.toString());
+    console.log("不保存", imageUrl, err.toString());
     return null;
   }
-  const [, imageFileName] = /^.*\/(.+?)$/.exec(url.pathname);
+  const match = /^.*\/(.+?\.(?:png|jpg|jpeg|gif))(?:.*)$/.exec(url.pathname);
+  if (match == null) {
+    debugger;
+  }
+  const [, imageFileName] = match;
   return imageFileName;
 };
 
